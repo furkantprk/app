@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Addresses</title>
+  <style>
+    body{
+      font-family: Arial, sans-serif;
+      background-color: bisque;
+    }
+    #address-list {
+      margin-top: 20px;
+    }
+    .address-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 2px solid #4CAF50; 
+      border-radius: 8px; 
+      box-shadow: 2px 2px 12px rgba(0, 0, 0, 0.1); 
+      background-color: #f9f9f9; 
+      width: 95%;
+    }
+    .address-text {
+      font-size: 16px;
+      color: #333;
+    }
+    .delete-button {
+      background-color: #f44336; 
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .delete-button:hover {
+      background-color: #d32f2f;
+    }
+    #add-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 5px 10px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    #add-button:hover {
+      background-color: #45a049;
+    }  
+  </style>
+</head>
+<body>
+  <h1>Addresses</h1>
+  <input type="text" id="address-input" placeholder="write a new address">
+  <select id="address-type">
+    <option value="home">Home Address</option>
+    <option value="work">Work Address</option>
+  </select>
+  <button id="add-button">Add</button>
+  
+  <div id="address-list"></div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+
+    const addressInput = document.getElementById('address-input');
+    const addressType = document.getElementById('address-type');
+    const addButton = document.getElementById('add-button');
+    const addressList = document.getElementById('address-list');
+
+    addButton.addEventListener('click', () => {
+      const address = addressInput.value;
+      const type = addressType.value;
+      if (address) {
+        ipcRenderer.send('add-address', { address, type });
+        addAddressToList(address, type);
+        addressInput.value = '';
+      }
+    });
+
+    function addAddressToList(address, type) {
+      const addressItem = document.createElement('div');
+      addressItem.classList.add('address-item');
+      
+      const addressText = document.createElement('span');
+      addressText.classList.add('address-text');
+      addressText.textContent = `${address} (${type === 'home' ? 'Home' : 'Work'})`;
+
+      const deleteButton = document.createElement('button');
+      deleteButton.classList.add('delete-button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.addEventListener('click', () => {
+        ipcRenderer.send('delete-address', address);
+        addressItem.remove();
+      });
+
+      addressItem.appendChild(addressText);
+      addressItem.appendChild(deleteButton);
+      addressList.appendChild(addressItem);
+    }
+
+    ipcRenderer.on('load-addresses', (event, addresses) => {
+      addresses.forEach(({ address, type }) => {
+        addAddressToList(address, type);
+      });
+      ipcRenderer.send('update-cart-addresses', addresses); 
+    });
+
+    ipcRenderer.send('request-addresses');
+
+  </script>
+</body>
+</html>
